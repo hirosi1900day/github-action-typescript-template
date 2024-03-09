@@ -57,7 +57,8 @@ jobs:
         id: test-action
         uses: ./
         with:
-          milliseconds: 2000
+          body: 'body'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print Output
         id: output
