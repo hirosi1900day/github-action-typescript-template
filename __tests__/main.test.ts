@@ -1,89 +1,67 @@
-/**
- * Unit tests for the action's main functionality, src/main.ts
- *
- * These should be run as if the action was called from a workflow.
- * Specifically, the inputs listed in `action.yml` should be set as environment
- * variables following the pattern `INPUT_<INPUT_NAME>`.
- */
-
+import { run } from '../src/main'
 import * as core from '@actions/core'
-import * as main from '../src/main'
+import { Octokit } from '@octokit/rest'
 
-// Mock the action's main function
-const runMock = jest.spyOn(main, 'run')
-
-// Other utilities
-const timeRegex = /^\d{2}:\d{2}:\d{2}/
-
-// Mock the GitHub Actions core library
-let debugMock: jest.SpiedFunction<typeof core.debug>
-let errorMock: jest.SpiedFunction<typeof core.error>
-let getInputMock: jest.SpiedFunction<typeof core.getInput>
-let setFailedMock: jest.SpiedFunction<typeof core.setFailed>
-let setOutputMock: jest.SpiedFunction<typeof core.setOutput>
-
-describe('action', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-
-    debugMock = jest.spyOn(core, 'debug').mockImplementation()
-    errorMock = jest.spyOn(core, 'error').mockImplementation()
-    getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
-    setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
-    setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation()
-  })
-
-  it('sets the time output', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          return '500'
-        default:
-          return ''
+// @actions/core と @octokit/rest のモック
+jest.mock('@actions/core')
+jest.mock('@octokit/rest', () => {
+  return {
+    Octokit: jest.fn().mockImplementation(() => {
+      return {
+        rest: {
+          issues: {
+            createComment: jest
+              .fn()
+              .mockResolvedValue({ data: { html_url: 'http://example.com' } })
+          }
+        }
       }
     })
+  }
+})
 
-    await main.run()
-    expect(runMock).toHaveReturned()
-
-    // Verify that all of the core library functions were called correctly
-    expect(debugMock).toHaveBeenNthCalledWith(1, 'Waiting 500 milliseconds ...')
-    expect(debugMock).toHaveBeenNthCalledWith(
-      2,
-      expect.stringMatching(timeRegex)
-    )
-    expect(debugMock).toHaveBeenNthCalledWith(
-      3,
-      expect.stringMatching(timeRegex)
-    )
-    expect(setOutputMock).toHaveBeenNthCalledWith(
-      1,
-      'time',
-      expect.stringMatching(timeRegex)
-    )
-    expect(errorMock).not.toHaveBeenCalled()
-  })
-
-  it('sets a failed status', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          return 'this is not a number'
-        default:
-          return ''
+// GitHub context のモック
+jest.mock('@actions/github', () => ({
+  getOctokit: jest.fn().mockImplementation(() => ({
+    rest: {
+      issues: {
+        createComment: jest
+          .fn()
+          .mockResolvedValue({ data: { html_url: 'http://example.com' } })
       }
+    }
+  })),
+  context: {
+    payload: {
+      pull_request: {
+        number: 1
+      }
+    },
+    repo: {
+      owner: 'owner',
+      repo: 'repo'
+    }
+  }
+}))
+
+describe('run function', () => {
+  it('should create a comment on a pull request', async () => {
+    const mockGetInput = core.getInput as jest.MockedFunction<
+      typeof core.getInput
+    >
+    mockGetInput.mockImplementation(name => {
+      if (name === 'repo-token') return 'token'
+      if (name === 'body') return 'Test body'
+      return ''
     })
 
-    await main.run()
-    expect(runMock).toHaveReturned()
+    await run()
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'milliseconds not a number'
+    expect(Octokit).toHaveBeenCalledTimes(1)
+    expect(core.setOutput).toHaveBeenCalledWith(
+      'comment-url',
+      'http://example.com'
     )
-    expect(errorMock).not.toHaveBeenCalled()
+    // 他の期待される呼び出しや結果をここに追加
   })
 })

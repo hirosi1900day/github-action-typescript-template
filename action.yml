@@ -13,13 +13,16 @@ inputs:
     description: 'GITHUB TOKEN'
     required: true
 
-  message:
-    description: 'message'
+  body:
+    description: 'body'
     required: true
 
 outputs:
   comment-url:
     description: 'The URL of the created comment'
+
+  time:
+    description: 'The time we greeted you'
 
 runs:
   using: 'node20'
