@@ -12,11 +12,11 @@ inputs:
   repo-token:
     description: 'GITHUB TOKEN'
     required: true
-  
-  message: 
+
+  message:
     description: 'message'
     required: true
-  
+
 outputs:
   comment-url:
     description: 'The URL of the created comment'
@@ -24,4 +24,3 @@ outputs:
 runs:
   using: 'node20'
   main: 'dist/index.js'
-
