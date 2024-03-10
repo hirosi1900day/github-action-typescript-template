@@ -1,8 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { wait } from './wait'
 import { Octokit } from '@octokit/rest'
-//
 
 /**
  * The main function for the action.
@@ -37,16 +35,6 @@ export async function run(): Promise<void> {
     })
 
     core.setOutput('comment-url', response.data.html_url)
-
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt('1', 10))
-    core.debug(new Date().toTimeString())
-
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)

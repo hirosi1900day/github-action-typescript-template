@@ -21,9 +21,6 @@ outputs:
   comment-url:
     description: 'The URL of the created comment'
 
-  time:
-    description: 'The time we greeted you'
-
 runs:
   using: 'node20'
   main: 'dist/index.js'
